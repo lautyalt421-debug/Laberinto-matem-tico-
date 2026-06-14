@@ -1,6 +1,6 @@
 /**
  * Mathyrinth: Escape del Guardián Desvanecido
- * Código del Núcleo del Sistema - Versión PC Desktop
+ * Código del Núcleo del Sistema - Versión PC (Máx 10 Equipos)
  */
 
 // Detector de errores general
@@ -10,15 +10,15 @@ window.onerror = function(msg, url, linenumber) {
 };
 
 // ==========================================
-// BANCO DE ECUACIONES PERSONALIZABLES
+// BANCO DE ECUACIONES PERSONALIZABLES (Actualizado)
 // ==========================================
 const BANCO_ECUACIONES = {
     easy: [
-        { expression: "X + 35= -19", result: -54 },
+        { expression: "X + 35 = -19", result: -54 },
         { expression: "A + (-12) = 16", result: 28 },
         { expression: "3x + 2 = 32", result: 10 },
         { expression: "X : 5 = 16", result: 80 },
-        { expression: "2x + 8 = 440 ", result: 216 },
+        { expression: "2x + 8 = 440", result: 216 },
         { expression: "9x + 9 = 900", result: 99 },
         { expression: "7x - 4 = 171", result: 25 },
         { expression: "4x + 7 = 51", result: 11 },
@@ -50,10 +50,9 @@ const BANCO_ECUACIONES = {
     ]
 };
 
-// CONFIGURACIÓN DEL JUEGO (Agrandamos el mapa a 6x6)
 const CONFIG = {
-    mapSize: 6,               // Cambialo a 8 o 10 si querés que sea aún más gigante
-    maxRounds: 20,            // Subí las rondas máximas porque el mapa es más grande
+    mapSize: 6,               
+    maxRounds: 20,            
     probabilidadEvento: 0.65, 
     probabilidadPuertaBloq: 0.25, 
     probabilidadEliminacion: 0.05 
@@ -75,21 +74,36 @@ let gameState = {
     },
     logs: [],
     startRoomKey: "0,0",
-    exitRoomKey: "5,5" // Se recalcula dinámicamente al iniciar
+    exitRoomKey: "5,5" 
 };
 
+// ==========================================
+// BANCO DE EVENTOS AMPLIADO
+// ==========================================
 const EVENT_TEMPLATES = [
-    { type: 'item', text: "🗝️ {player} encontró una llave tirada.", action: (team) => { team.keys++; } },
+    // Clásicos
+    { type: 'item', text: "🗝️ {player} encontró una llave tirada entre los escombros.", action: (team) => { team.keys++; } },
     { type: 'item', text: "🔦 {player} encontró una linterna funcional.", action: (team) => { team.items.push("Linterna"); } },
-    { type: 'item', text: "🧭 {player} encontró un mapa antiguo.", action: (team) => { team.items.push("Mapa"); } },
+    { type: 'item', text: "🧭 {player} encontró un mapa antiguo manchado.", action: (team) => { team.items.push("Mapa"); } },
     { type: 'buff', text: "🚪 {player} descubrió un pasadizo secreto.", action: (team) => { team.items.push("Pasadizo"); } },
-    { type: 'buff', text: "⚡ {player} recuperó el aliento súbitamente.", action: (team) => { } },
-    { type: 'debuff', text: "😨 {player} entró en pánico por los susurros.", action: (team) => { } },
-    { type: 'debuff', text: "🕸️ {player} quedó atrapado en telarañas.", action: (team) => { } },
-    { type: 'block', text: "🐕 Una manada de perros salvajes gruñe cerca.", action: (team) => { } },
-    { type: 'block', text: "📚 Una estantería caída impide avanzar.", action: (team) => { } },
-    { type: 'block', text: "🔥 Un incendio fatuo bloquea el paso.", action: (team) => { } },
-    { type: 'debuff', text: "🌫️ La niebla se condensa repentinamente.", action: (team) => { } }
+    { type: 'buff', text: "⚡ {player} recuperó el aliento súbitamente, dando ánimos al equipo.", action: (team) => { } },
+    { type: 'debuff', text: "😨 {player} entró en pánico tras escuchar susurros a sus espaldas.", action: (team) => { } },
+    { type: 'debuff', text: "🕸️ {player} quedó atrapado en telarañas gigantes.", action: (team) => { } },
+    { type: 'block', text: "🐕 Una manada de perros salvajes gruñe cerca en la oscuridad.", action: (team) => { } },
+    { type: 'block', text: "📚 Una estantería caída impide avanzar con rapidez.", action: (team) => { } },
+    { type: 'block', text: "🔥 Un incendio fatuo bloquea el paso temporalmente.", action: (team) => { } },
+    { type: 'debuff', text: "🌫️ La niebla se condensa repentinamente, no se ve nada.", action: (team) => { } },
+    // Nuevos añadidos
+    { type: 'item', text: "🗝️ {player} revisó el bolsillo de una estatua y halló una llave oculta.", action: (team) => { team.keys++; } },
+    { type: 'item', text: "🧮 {player} descubrió un viejo ábaco. ¡Se sienten más inteligentes!", action: (team) => { team.items.push("Abaco"); } },
+    { type: 'buff', text: "💡 {player} tuvo una epifanía matemática y guio al grupo.", action: (team) => { } },
+    { type: 'buff', text: "🛡️ {player} encontró un escudo antiguo. Da sensación de seguridad.", action: (team) => { team.items.push("Escudo"); } },
+    { type: 'debuff', text: "🦇 Un enjambre de murciélagos rozó a {player}, causándole terror.", action: (team) => { } },
+    { type: 'debuff', text: "🐀 {player} pegó un grito al ver pasar una rata del tamaño de un gato.", action: (team) => { } },
+    { type: 'debuff', text: "🥶 Una corriente de aire helado congeló hasta los huesos a {player}.", action: (team) => { } },
+    { type: 'block', text: "🪨 Un leve derrumbe del techo asustó a {player} y los retrasó.", action: (team) => { } },
+    { type: 'block', text: "🚪 La puerta chirrió tan fuerte que aturdió a {player}.", action: (team) => { } },
+    { type: 'debuff', text: "💧 Una gota de agua sucia cayó justo en el ojo de {player}.", action: (team) => { } }
 ];
 
 const DOM = {
@@ -121,8 +135,9 @@ const DOM = {
 // --- LISTENERS CONFIGURACIÓN ---
 DOM.btnNextSetup.addEventListener('click', () => {
     const count = parseInt(DOM.teamsCountInput.value);
-    if (count < 2 || count > 5) {
-        alert("Soporta únicamente de 2 a 5 equipos simultáneos.");
+    // 🚨 LIMITE ACTUALIZADO A 10 EQUIPOS
+    if (count < 2 || count > 10) {
+        alert("Soporta únicamente de 2 a 10 equipos simultáneos.");
         return;
     }
     gameState.totalTeams = count;
@@ -171,7 +186,6 @@ DOM.btnStartGame.addEventListener('click', () => {
     gameState.difficulty = DOM.difficultySelect.value;
     gameState.teams = [];
     
-    // Configura dinámicamente la habitación de salida según el tamaño del mapa
     gameState.exitRoomKey = `${CONFIG.mapSize - 1},${CONFIG.mapSize - 1}`;
 
     for (let i = 1; i <= gameState.totalTeams; i++) {
@@ -197,7 +211,7 @@ DOM.btnStartGame.addEventListener('click', () => {
     gameState.map[gameState.startRoomKey].visited = true;
     DOM.setupScreen.classList.add('hidden');
     DOM.gameScreen.classList.remove('hidden');
-    logEvent("🏰 ¡Bienvenidos a Mathyrinth! Los equipos están atrapados en la entrada del laberinto.");
+    logEvent("🏰 ¡Bienvenidos a Mathyrinth! Los equipos están atrapados en la entrada.");
     startMathPhase();
 });
 
@@ -264,7 +278,6 @@ function buildProceduralDungeon() {
     }
 }
 
-// El resto de funciones de control de fases se mantienen estables...
 function fetchManualEquation(difficulty) {
     const pool = BANCO_ECUACIONES[difficulty] || BANCO_ECUACIONES['medium'];
     const randomIndex = Math.floor(Math.random() * pool.length);
@@ -433,7 +446,6 @@ function isRoomDiscoveredByProximity(roomKey) {
     return discovered;
 }
 
-// Clics físicos en botones (se mantienen por interfaz)
 DOM.dirButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
         if (gameState.currentPhase !== 'movement') return;
@@ -442,9 +454,7 @@ DOM.dirButtons.forEach(btn => {
     });
 });
 
-// ⌨️ CONTROLES PARA PC (Teclado: Flechas o WASD)
 window.addEventListener('keydown', (e) => {
-    // Si no estamos en la fase de movimiento, ignoramos las teclas
     if (gameState.currentPhase !== 'movement') return;
     if (gameState.priorityQueue.length === 0 || gameState.currentMovementIndex >= gameState.priorityQueue.length) return;
 
@@ -469,7 +479,7 @@ window.addEventListener('keydown', (e) => {
     }
 
     if (direction) {
-        e.preventDefault(); // Evita que la ventana del navegador haga scroll
+        e.preventDefault(); 
         executeMovement(direction);
     }
 });
@@ -495,7 +505,7 @@ function executeMovement(dir) {
     if (occupiedByAnother) { DOM.moveErrorMsg.innerText = "⚠ Ocupado por otro equipo."; return; }
     team.currentRoomKey = destinationKey;
     gameState.map[destinationKey].visited = true;
-    logEvent(`🏃 ${team.name} avanzá a [${destinationKey}].`);
+    logEvent(`🏃 ${team.name} avanzó a [${destinationKey}].`);
     if (destinationKey === gameState.exitRoomKey) { triggerEndGame(true, team); return; }
     gameState.currentMovementIndex++;
     if (gameState.currentMovementIndex < gameState.priorityQueue.length) { selectTeamForMovement(gameState.priorityQueue[gameState.currentMovementIndex]); } 
@@ -559,7 +569,6 @@ function checkGhostCollisions() {
     });
 }
 
-// Control del fin de ronda
 function endRound() {
     processGhostAI();
     if (!gameState.teams.some(t => isTeamAlive(t))) { triggerEndGame(false, null); return; }
@@ -580,4 +589,4 @@ function triggerEndGame(escaped, winningTeam) {
         DOM.endTitle.innerText = "💀 DERROTA TOTAL"; DOM.endTitle.style.color = "var(--danger)";
         DOM.endStatsContent.innerHTML = `<p>El Guardián ganó la partida en la ronda ${gameState.round}.</p>`;
     }
-    }
+}
