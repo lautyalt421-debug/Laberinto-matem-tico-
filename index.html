@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathyrinth: Escape del Guardián Desvanecido</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="setup-screen" class="container">
+        <h1>📐 Mathyrinth</h1>
+        <h2>Escape del Guardián Desvanecido</h2>
+        <p class="subtitle">Juego de mesa matemático para mazmorras analógicas</p>
+        
+        <div class="setup-card">
+            <h3>Configuración de Partida</h3>
+            <div class="form-group">
+                <label for="difficulty-select">Dificultad de Ecuaciones:</label>
+                <select id="difficulty-select">
+                    <option value="easy">Fácil (Aritmética básica)</option>
+                    <option value="medium" selected>Media (Operaciones combinadas)</option>
+                    <option value="hard">Difícil (Ecuaciones de primer grado)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="teams-count">Cantidad de Equipos (2 - 5):</label>
+                <input type="number" id="teams-count" min="2" max="5" value="2">
+            </div>
+            <button id="btn-next-setup" class="btn-primary">Configurar Miembros</button>
+        </div>
+
+        <div id="teams-details-container" class="setup-card hidden">
+            <h3>Detalles de los Equipos</h3>
+            <div id="teams-inputs-wrapper"></div>
+            <button id="btn-start-game" class="btn-success">Generar Laberinto y Empezar</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="container hidden">
+        <header class="game-header">
+            <div class="header-info">
+                <span>Ronda: <strong id="display-round">1</strong>/15</span>
+                <span id="sudden-death-badge" class="badge hidden">⚠️ MUERTE SÚBITA</span>
+            </div>
+            <h1>Mathyrinth</h1>
+            <div class="header-ghost-status" id="ghost-status-bar">
+                El Guardián duerme...
+            </div>
+        </header>
+
+        <div class="game-grid">
+            <section class="panel-section" id="panel-teams">
+                <h2>Control de Equipos</h2>
+                <div id="action-phase-indicator" class="phase-banner">Fase: Resolución de Ecuaciones</div>
+                
+                <div id="teams-game-cards"></div>
+                
+                <div class="global-actions">
+                    <button id="btn-advance-phase" class="btn-primary full-width">Pasar a Fase de Movimiento</button>
+                </div>
+            </section>
+
+            <section class="panel-section" id="panel-center">
+                <h2>Exploración del Laberinto</h2>
+                
+                <div id="map-viewport">
+                    <div id="dungeon-map"></div>
+                </div>
+
+                <div class="movement-controls-box">
+                    <h3>Panel de Dirección (Equipo en Turno)</h3>
+                    <p id="current-moving-team-txt">Esperando fase de movimiento...</p>
+                    <div class="d-pad">
+                        <button id="move-n" class="btn-dir" data-dir="N">▲ N</button>
+                        <div class="d-pad-row">
+                            <button id="move-o" class="btn-dir" data-dir="O">◀ O</button>
+                            <div class="d-pad-center">🧭</div>
+                            <button id="move-e" class="btn-dir" data-dir="E">E ▶</button>
+                        </div>
+                        <button id="move-s" class="btn-dir" data-dir="S">▼ S</button>
+                    </div>
+                    <p id="move-error-msg" class="error-text"></p>
+                </div>
+            </section>
+
+            <section class="panel-section" id="panel-logs">
+                <h2>Registro del Guardián</h2>
+                <div class="log-wrapper">
+                    <div id="event-log"></div>
+                </div>
+                
+                <div class="quick-status-box">
+                    <h3>Prioridad de Movimiento</h3>
+                    <ol id="priority-list-display">
+                        <li>Sin definir</li>
+                    </ol>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="end-screen" class="container hidden">
+        <div class="end-card">
+            <h1 id="end-title">Fin de la Partida</h1>
+            <div id="end-stats-content"></div>
+            <button onclick="window.location.reload();" class="btn-primary">Jugar de Nuevo</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
