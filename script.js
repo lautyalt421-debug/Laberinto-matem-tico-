@@ -237,7 +237,7 @@ function buildProceduralDungeon() {
         }
     }
 }
-  function fetchManualEquation(difficulty) {
+function fetchManualEquation(difficulty) {
     const pool = BANCO_ECUACIONES[difficulty] || BANCO_ECUACIONES['medium'];
     const randomIndex = Math.floor(Math.random() * pool.length);
     const eq = pool[randomIndex];
