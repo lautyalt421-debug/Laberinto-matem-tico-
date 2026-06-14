@@ -215,8 +215,8 @@ function buildProceduralDungeon() {
     for(let i=0; i<size-1; i++){
         gameState.map[`${i},0`].connections.E = `${i+1},0`;
         gameState.map[`${i+1},0`].connections.O = `${i},0`;
-        gameState.map[`${size-1},i`].connections.S = `${size-1},i+1`;
-        gameState.map[`${size-1},i+1`].connections.N = `${size-1},i`;
+        gameState.map[`${size-1},${i}`].connections.S = `${size-1},${i+1}`;
+        gameState.map[`${size-1},${i+1}`].connections.N = `${size-1},${i}`;
     }
     const secretKey = "1,2";
     if (gameState.map[secretKey]) {
