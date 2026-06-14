@@ -40,7 +40,6 @@ body {
     display: none !important;
 }
 
-/* Tipografías */
 h1 {
     text-align: center;
     color: #f3e8ff;
@@ -64,7 +63,6 @@ h2 {
     margin-bottom: 20px;
 }
 
-/* Pantalla de Configuración */
 .setup-card {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
@@ -105,7 +103,6 @@ input:focus, select:focus {
     margin-bottom: 20px;
 }
 
-/* Botones */
 button {
     cursor: pointer;
     padding: 10px 15px;
@@ -123,8 +120,6 @@ button {
 .btn-danger { background: var(--danger); color: white; }
 .btn-warning { background: var(--warning); color: black; }
 .full-width { width: 100%; }
-
-/* Pantalla de Juego Estructura Grid */
 .game-header {
     background: var(--panel-bg);
     padding: 10px 20px;
@@ -170,7 +165,6 @@ button {
     font-size: 0.9rem;
 }
 
-/* Tarjetas de Equipos en Juego */
 .team-game-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -253,7 +247,6 @@ button {
     flex: 1;
 }
 
-/* Renderizado del Mapa Dinámico */
 #map-viewport {
     background: #09090d;
     border: 2px solid #2e2e3f;
@@ -329,7 +322,6 @@ button {
     overflow: hidden;
 }
 
-/* Control Pad de Movimiento */
 .movement-controls-box {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -374,7 +366,6 @@ button {
     font-weight: bold;
 }
 
-/* Panel de Mensajes e Historial */
 .log-wrapper {
     background: #09090d;
     border: 1px solid var(--border-color);
@@ -424,7 +415,6 @@ button {
     to { opacity: 1; }
 }
 
-/* Pantalla final */
 .end-card {
     background: var(--panel-bg);
     border: 2px solid var(--accent);
@@ -445,4 +435,4 @@ button {
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 5px;
-}
+                              }
