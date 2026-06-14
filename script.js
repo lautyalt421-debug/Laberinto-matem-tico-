@@ -1,7 +1,13 @@
 /**
  * Mathyrinth: Escape del Guardián Desvanecido
- * Código del Núcleo del Sistema - Vanilla JavaScript (ES6)
+ * Código del Núcleo del Sistema - Versión PC Desktop
  */
+
+// Detector de errores general
+window.onerror = function(msg, url, linenumber) {
+    alert('❌ ¡Error en el juego!\n\nDetalle: ' + msg + '\nLínea: ' + linenumber);
+    return false;
+};
 
 // ==========================================
 // BANCO DE ECUACIONES PERSONALIZABLES
@@ -33,9 +39,10 @@ const BANCO_ECUACIONES = {
     ]
 };
 
+// CONFIGURACIÓN DEL JUEGO (Agrandamos el mapa a 6x6)
 const CONFIG = {
-    mapSize: 4,               
-    maxRounds: 15,            
+    mapSize: 6,               // Cambialo a 8 o 10 si querés que sea aún más gigante
+    maxRounds: 20,            // Subí las rondas máximas porque el mapa es más grande
     probabilidadEvento: 0.65, 
     probabilidadPuertaBloq: 0.25, 
     probabilidadEliminacion: 0.05 
@@ -57,21 +64,21 @@ let gameState = {
     },
     logs: [],
     startRoomKey: "0,0",
-    exitRoomKey: "3,3"
+    exitRoomKey: "5,5" // Se recalcula dinámicamente al iniciar
 };
 
 const EVENT_TEMPLATES = [
-    { type: 'item', text: "🗝️ {player} encontró una llave tirada entre las baldosas aflojadas.", action: (team) => { team.keys++; } },
-    { type: 'item', text: "🔦 {player} encontró una linterna funcional. El mapa expande su rango visible.", action: (team) => { team.items.push("Linterna"); } },
-    { type: 'item', text: "🧭 {player} encontró un mapa antiguo arrugado en un rincón.", action: (team) => { team.items.push("Mapa"); } },
-    { type: 'buff', text: "🚪 {player} descubrió un pasadizo secreto temporal sin bloqueos directos.", action: (team) => { team.items.push("Pasadizo"); } },
-    { type: 'buff', text: "⚡ {player} recuperó el aliento súbitamente y el equipo se siente con energías.", action: (team) => { } },
-    { type: 'debuff', text: "😨 {player} entró en pánico por los susurros y pierde la capacidad de aportar este turno.", action: (team) => { } },
-    { type: 'debuff', text: "🕸️ {player} quedó atrapado en telarañas densas. Se requirió esfuerzo para sacarlo.", action: (team) => { } },
-    { type: 'block', text: "🐕 Una manada de perros salvajes del subsuelo gruñe en los corredores adyacentes.", action: (team) => { } },
-    { type: 'block', text: "📚 Una estantería caída impide avanzar con fluidez en los alrededores.", action: (team) => { } },
-    { type: 'block', text: "🔥 Un incendio fatuo bloquea parcialmente una de las conexiones.", action: (team) => { } },
-    { type: 'debuff', text: "🌫️ La niebla se condensa repentinamente impidiendo ver con claridad las habitaciones lejanas.", action: (team) => { } }
+    { type: 'item', text: "🗝️ {player} encontró una llave tirada.", action: (team) => { team.keys++; } },
+    { type: 'item', text: "🔦 {player} encontró una linterna funcional.", action: (team) => { team.items.push("Linterna"); } },
+    { type: 'item', text: "🧭 {player} encontró un mapa antiguo.", action: (team) => { team.items.push("Mapa"); } },
+    { type: 'buff', text: "🚪 {player} descubrió un pasadizo secreto.", action: (team) => { team.items.push("Pasadizo"); } },
+    { type: 'buff', text: "⚡ {player} recuperó el aliento súbitamente.", action: (team) => { } },
+    { type: 'debuff', text: "😨 {player} entró en pánico por los susurros.", action: (team) => { } },
+    { type: 'debuff', text: "🕸️ {player} quedó atrapado en telarañas.", action: (team) => { } },
+    { type: 'block', text: "🐕 Una manada de perros salvajes gruñe cerca.", action: (team) => { } },
+    { type: 'block', text: "📚 Una estantería caída impide avanzar.", action: (team) => { } },
+    { type: 'block', text: "🔥 Un incendio fatuo bloquea el paso.", action: (team) => { } },
+    { type: 'debuff', text: "🌫️ La niebla se condensa repentinamente.", action: (team) => { } }
 ];
 
 const DOM = {
@@ -100,6 +107,7 @@ const DOM = {
     dirButtons: document.querySelectorAll('.btn-dir')
 };
 
+// --- LISTENERS CONFIGURACIÓN ---
 DOM.btnNextSetup.addEventListener('click', () => {
     const count = parseInt(DOM.teamsCountInput.value);
     if (count < 2 || count > 5) {
@@ -147,9 +155,14 @@ function renderMembersInputs(teamIdx, size) {
     }
 }
 
+// --- BOTÓN TRIGGER JUEGO ---
 DOM.btnStartGame.addEventListener('click', () => {
     gameState.difficulty = DOM.difficultySelect.value;
     gameState.teams = [];
+    
+    // Configura dinámicamente la habitación de salida según el tamaño del mapa
+    gameState.exitRoomKey = `${CONFIG.mapSize - 1},${CONFIG.mapSize - 1}`;
+
     for (let i = 1; i <= gameState.totalTeams; i++) {
         const teamName = document.getElementById(`setup-team-name-${i}`).value.trim() || `Equipo ${i}`;
         const size = parseInt(document.getElementById(`setup-team-size-${i}`).value);
@@ -173,7 +186,7 @@ DOM.btnStartGame.addEventListener('click', () => {
     gameState.map[gameState.startRoomKey].visited = true;
     DOM.setupScreen.classList.add('hidden');
     DOM.gameScreen.classList.remove('hidden');
-    logEvent("🏰 ¡Bienvenidos a Mathyrinth! Los equipos están atrapados en la entrada del laberinto. Resuelvan para escapar.");
+    logEvent("🏰 ¡Bienvenidos a Mathyrinth! Los equipos están atrapados en la entrada del laberinto.");
     startMathPhase();
 });
 
@@ -212,12 +225,14 @@ function buildProceduralDungeon() {
             }
         }
     }
+    
     for(let i=0; i<size-1; i++){
         gameState.map[`${i},0`].connections.E = `${i+1},0`;
         gameState.map[`${i+1},0`].connections.O = `${i},0`;
         gameState.map[`${size-1},${i}`].connections.S = `${size-1},${i+1}`;
         gameState.map[`${size-1},${i+1}`].connections.N = `${size-1},${i}`;
     }
+    
     const secretKey = "1,2";
     if (gameState.map[secretKey]) {
         gameState.map[secretKey].type = 'secret';
@@ -237,6 +252,8 @@ function buildProceduralDungeon() {
         }
     }
 }
+
+// El resto de funciones de control de fases se mantienen estables...
 function fetchManualEquation(difficulty) {
     const pool = BANCO_ECUACIONES[difficulty] || BANCO_ECUACIONES['medium'];
     const randomIndex = Math.floor(Math.random() * pool.length);
@@ -250,7 +267,7 @@ function startMathPhase() {
     DOM.phaseIndicator.innerText = "Fase: Resolución de Ecuaciones";
     DOM.phaseIndicator.style.background = "#3b0764";
     DOM.btnAdvancePhase.innerText = "Pasar a Fase de Movimiento";
-    DOM.currentMovingTeamTxt.innerText = "Esperando que el árbitro procese las respuestas en papel...";
+    DOM.currentMovingTeamTxt.innerText = "Esperando que el árbitro procese las respuestas...";
     gameState.teams.forEach(team => {
         if (isTeamAlive(team)) {
             team.hasAnsweredThisRound = false;
@@ -266,12 +283,12 @@ function startMathPhase() {
 
 function startMovementPhase() {
     if (gameState.priorityQueue.length === 0) {
-        logEvent("🔔 Ningún equipo resolvió correctamente esta ronda. Se salta directo al Guardián.");
+        logEvent("🔔 Ningún equipo avanzó esta ronda. Turno del Guardián.");
         endRound();
         return;
     }
     gameState.currentPhase = 'movement';
-    DOM.phaseIndicator.innerText = "Fase: Movimiento Estratégico";
+    DOM.phaseIndicator.innerText = "Fase: Movimiento Estratégico (Usá las flechas o WASD)";
     DOM.phaseIndicator.style.background = "#15803d";
     DOM.btnAdvancePhase.innerText = "Terminar Ronda de Movimientos";
     gameState.currentMovementIndex = 0;
@@ -281,7 +298,7 @@ function startMovementPhase() {
 
 function selectTeamForMovement(teamId) {
     const team = gameState.teams[teamId];
-    DOM.currentMovingTeamTxt.innerHTML = `Moviendo ahora: <strong style='color:#c084fc;'>${team.name}</strong> (Fila de prioridad)`;
+    DOM.currentMovingTeamTxt.innerHTML = `Moviendo ahora: <strong style='color:#c084fc;'>${team.name}</strong>`;
     DOM.moveErrorMsg.innerText = "";
     document.querySelectorAll('.team-game-card').forEach(c => c.classList.remove('priority-active'));
     const activeCard = document.getElementById(`game-card-${teamId}`);
@@ -307,14 +324,14 @@ function renderTeamsControlPanel() {
         let mathHTML = "";
         if (gameState.currentPhase === 'math') {
             if (team.hasAnsweredThisRound) {
-                mathHTML = `<p style="color:${team.answeredCorrectly ? 'var(--success)':'var(--danger)'}; font-weight:bold;">${team.answeredCorrectly ? '✅ Correcto (Prioridad registrada)' : '❌ Incorrecto (No mueve)'}</p>`;
+                mathHTML = `<p style="color:${team.answeredCorrectly ? 'var(--success)':'var(--danger)'}; font-weight:bold;">${team.answeredCorrectly ? '✅ Correcto' : '❌ Incorrecto'}</p>`;
             } else {
                 if (team.mathState === 'hidden') {
                     mathHTML = `<div class="math-control-box"><p style="text-align:center; font-style:italic; font-size:0.85rem;">Ecuación lista en papel</p><div class="math-actions"><button class="btn-primary" onclick="setTeamMathState(${team.id}, 'shown')">Mostrar</button></div></div>`;
                 } else if (team.mathState === 'shown') {
                     mathHTML = `<div class="math-control-box"><div class="equation-text">${team.currentEquation.expression}</div><div class="math-actions"><button class="btn-warning" onclick="setTeamMathState(${team.id}, 'hidden')">Ocultar</button><button class="btn-success" onclick="setTeamMathState(${team.id}, 'input')">Resolver</button></div></div>`;
                 } else if (team.mathState === 'input') {
-                    mathHTML = `<div class="math-control-box"><div class="equation-text" style="font-size:0.95rem;">Resultado esperado en secreto</div><div class="inputs-row"><input type="number" id="math-ans-input-${team.id}" placeholder="Resultado"><button class="btn-success" onclick="submitTeamAnswer(${team.id})">OK</button></div><button class="btn-danger full-width" style="margin-top:5px; padding:3px;" onclick="submitTeamFail(${team.id})">Marcar Fallido</button></div>`;
+                    mathHTML = `<div class="math-control-box"><div class="equation-text" style="font-size:0.95rem;">Resultado esperado</div><div class="inputs-row"><input type="number" id="math-ans-input-${team.id}" placeholder="Resultado"><button class="btn-success" onclick="submitTeamAnswer(${team.id})">OK</button></div><button class="btn-danger full-width" style="margin-top:5px; padding:3px;" onclick="submitTeamFail(${team.id})">Marcar Fallido</button></div>`;
                 }
             }
         } else {
@@ -339,11 +356,11 @@ function submitTeamAnswer(teamId) {
         team.answeredCorrectly = true;
         team.mathSolvedCount++;
         gameState.priorityQueue.push(teamId);
-        logEvent(`📝 ${team.name} resolvió la ecuación correctamente.`);
+        logEvent(`📝 ${team.name} resolvió correctamente.`);
         triggerRandomEvent(team);
     } else {
         team.answeredCorrectly = false;
-        logEvent(`❌ ${team.name} dio una respuesta incorrecta.`);
+        logEvent(`❌ ${team.name} falló la ecuación.`);
     }
     updatePriorityListDisplay();
     renderTeamsControlPanel();
@@ -353,7 +370,7 @@ function submitTeamFail(teamId) {
     const team = gameState.teams[teamId];
     team.hasAnsweredThisRound = true;
     team.answeredCorrectly = false;
-    logEvent(`❌ Árbitro marcó como incorrecto el turno de ${team.name}.`);
+    logEvent(`❌ Árbitro invalidó el turno de ${team.name}.`);
     updatePriorityListDisplay();
     renderTeamsControlPanel();
 }
@@ -405,12 +422,45 @@ function isRoomDiscoveredByProximity(roomKey) {
     return discovered;
 }
 
+// Clics físicos en botones (se mantienen por interfaz)
 DOM.dirButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
         if (gameState.currentPhase !== 'movement') return;
         if (gameState.priorityQueue.length === 0 || gameState.currentMovementIndex >= gameState.priorityQueue.length) return;
         executeMovement(e.target.dataset.dir);
     });
+});
+
+// ⌨️ CONTROLES PARA PC (Teclado: Flechas o WASD)
+window.addEventListener('keydown', (e) => {
+    // Si no estamos en la fase de movimiento, ignoramos las teclas
+    if (gameState.currentPhase !== 'movement') return;
+    if (gameState.priorityQueue.length === 0 || gameState.currentMovementIndex >= gameState.priorityQueue.length) return;
+
+    let direction = null;
+    switch (e.key.toLowerCase()) {
+        case 'arrowup':
+        case 'w':
+            direction = 'N';
+            break;
+        case 'arrowdown':
+        case 's':
+            direction = 'S';
+            break;
+        case 'arrowright':
+        case 'd':
+            direction = 'E';
+            break;
+        case 'arrowleft':
+        case 'a':
+            direction = 'O';
+            break;
+    }
+
+    if (direction) {
+        e.preventDefault(); // Evita que la ventana del navegador haga scroll
+        executeMovement(direction);
+    }
 });
 
 function executeMovement(dir) {
@@ -427,14 +477,14 @@ function executeMovement(dir) {
             else { DOM.moveErrorMsg.innerText = "🔒 Requiere llave."; return; }
         } else if (lockType === "ecuacion" || lockType === "mecanismo") {
             if (team.items.includes("Pasadizo")) { team.items = team.items.filter(i => i !== "Pasadizo"); currentRoom.doorLocks[dir] = false; logEvent(`🚪 Pasadizo usado.`); } 
-            else { DOM.moveErrorMsg.innerText = "🧱 Sello activo. Profesor da ecuación extra."; currentRoom.doorLocks[dir] = false; logEvent(`🔧 Desactivado.`); }
+            else { DOM.moveErrorMsg.innerText = "🧱 Sello activo."; currentRoom.doorLocks[dir] = false; }
         }
     }
     let occupiedByAnother = gameState.teams.some(t => t.id !== team.id && isTeamAlive(t) && t.currentRoomKey === destinationKey);
     if (occupiedByAnother) { DOM.moveErrorMsg.innerText = "⚠ Ocupado por otro equipo."; return; }
     team.currentRoomKey = destinationKey;
     gameState.map[destinationKey].visited = true;
-    logEvent(`🏃 ${team.name} avanzó a [${destinationKey}].`);
+    logEvent(`🏃 ${team.name} avanzá a [${destinationKey}].`);
     if (destinationKey === gameState.exitRoomKey) { triggerEndGame(true, team); return; }
     gameState.currentMovementIndex++;
     if (gameState.currentMovementIndex < gameState.priorityQueue.length) { selectTeamForMovement(gameState.priorityQueue[gameState.currentMovementIndex]); } 
@@ -473,7 +523,7 @@ function processGhostAI() {
     if (gameState.ghost.active) {
         const currentRoom = gameState.map[gameState.ghost.roomKey];
         let randomFactor = Math.random();
-        if (randomFactor < 0.15 && gameState.round <= 15) { logEvent("👻 El Guardián se desorientó."); return; }
+        if (randomFactor < 0.15 && gameState.round <= 20) { logEvent("👻 El Guardián se desorientó."); return; }
         if (randomFactor > 0.88) {
             let coords = gameState.ghost.roomKey.split(',').map(Number);
             let nextX = Math.min(Math.max(coords[0] + (Math.random() > 0.5 ? 1 : -1), 0), CONFIG.mapSize - 1);
@@ -481,7 +531,7 @@ function processGhostAI() {
             gameState.ghost.roomKey = `${nextX},${nextY}`; logEvent("👻 El Guardián cruzó un muro."); checkGhostCollisions(); return;
         }
         let validDirections = [];
-        for (let d in currentRoom.connections) { if (currentRoom.connections[d] && (!currentRoom.doorLocks[d] || gameState.round > 15)) validDirections.push(currentRoom.connections[d]); }
+        for (let d in currentRoom.connections) { if (currentRoom.connections[d] && (!currentRoom.doorLocks[d] || gameState.round > 20)) validDirections.push(currentRoom.connections[d]); }
         if (validDirections.length > 0) { gameState.ghost.roomKey = validDirections[Math.floor(Math.random() * validDirections.length)]; DOM.ghostStatusBar.innerText = "👻 El Guardián se movió."; checkGhostCollisions(); }
     }
 }
@@ -498,6 +548,7 @@ function checkGhostCollisions() {
     });
 }
 
+// Control del fin de ronda
 function endRound() {
     processGhostAI();
     if (!gameState.teams.some(t => isTeamAlive(t))) { triggerEndGame(false, null); return; }
@@ -518,4 +569,4 @@ function triggerEndGame(escaped, winningTeam) {
         DOM.endTitle.innerText = "💀 DERROTA TOTAL"; DOM.endTitle.style.color = "var(--danger)";
         DOM.endStatsContent.innerHTML = `<p>El Guardián ganó la partida en la ronda ${gameState.round}.</p>`;
     }
-            }
+    }
