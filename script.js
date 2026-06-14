@@ -14,12 +14,24 @@ window.onerror = function(msg, url, linenumber) {
 // ==========================================
 const BANCO_ECUACIONES = {
     easy: [
-        { expression: "2x + 5 = 15", result: 5 },
-        { expression: "3x - 2 = 10", result: 4 },
-        { expression: "x / 2 = 8", result: 16 },
-        { expression: "5x = 25", result: 5 },
-        { expression: "x + 12 = 20", result: 8 },
-        { expression: "4x - 4 = 12", result: 4 }
+        { expression: "X + 35= -19", result: 5 },
+        { expression: "A + (-12) = 16", result: 4 },
+        { expression: "3x + 2 = 32", result: 16 },
+        { expression: "X : 5 = 16", result: 5 },
+        { expression: "2x + 8 = 440 ", result: 8 },
+        { expression: "9x + 9 = 900", result: 4 },
+        { expression: "7x - 4 = 171", result: 6 },
+        { expression: "4x + 7 = 51", result: 4 },
+        { expression: "5x - 12 = 43", result: 2 },
+        { expression: "12x - 24 = 120", result: 9 },
+        { expression: "2x - 20 = 18", result: 4 },
+        { expression: "8x + 16 = 200", result: 3 },
+        { expression: "3(x - 4) = 48", result: 6 },
+        { expression: "4(x + 5) = 60", result: 4 },
+        { expression: "6x + 14 = 98", result: 2 },
+        { expression: "2x / 3 = 6", result: 9 },
+        { expression: "3x + 25 = 100", result: 4 },
+        { expression: "7x - 9 = 75", result: 3 }
     ],
     medium: [
         { expression: "2x + 4 = x + 10", result: 6 },
