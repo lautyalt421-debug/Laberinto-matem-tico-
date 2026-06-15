@@ -1,6 +1,6 @@
 /**
  * Mathyrinth: Escape del Guardián Desvanecido
- * Código del Núcleo del Sistema - Versión PC (Máx 10 Equipos)
+ * Código del Núcleo del Sistema - Versión PC (Máx 10 Equipos + Sistema de Muertes)
  */
 
 // Detector de errores general
@@ -10,7 +10,7 @@ window.onerror = function(msg, url, linenumber) {
 };
 
 // ==========================================
-// BANCO DE ECUACIONES PERSONALIZABLES (Actualizado)
+// BANCO DE ECUACIONES PERSONALIZABLES
 // ==========================================
 const BANCO_ECUACIONES = {
     easy: [
@@ -58,6 +58,17 @@ const CONFIG = {
     probabilidadEliminacion: 0.05 
 };
 
+// Array de muertes aleatorias para el modal
+const CAUSAS_MUERTE = [
+    "cayéndose por las escaleras",
+    "devorado por las sombras",
+    "al activar una trampa de pinchos",
+    "por un paro cardíaco del puro susto",
+    "aplastado por un derrumbe del techo",
+    "al inhalar una espora tóxica",
+    "arrastrado por algo en la oscuridad"
+];
+
 let gameState = {
     difficulty: 'medium',
     totalTeams: 2,
@@ -81,7 +92,6 @@ let gameState = {
 // BANCO DE EVENTOS AMPLIADO
 // ==========================================
 const EVENT_TEMPLATES = [
-    // Clásicos
     { type: 'item', text: "🗝️ {player} encontró una llave tirada entre los escombros.", action: (team) => { team.keys++; } },
     { type: 'item', text: "🔦 {player} encontró una linterna funcional.", action: (team) => { team.items.push("Linterna"); } },
     { type: 'item', text: "🧭 {player} encontró un mapa antiguo manchado.", action: (team) => { team.items.push("Mapa"); } },
@@ -93,7 +103,6 @@ const EVENT_TEMPLATES = [
     { type: 'block', text: "📚 Una estantería caída impide avanzar con rapidez.", action: (team) => { } },
     { type: 'block', text: "🔥 Un incendio fatuo bloquea el paso temporalmente.", action: (team) => { } },
     { type: 'debuff', text: "🌫️ La niebla se condensa repentinamente, no se ve nada.", action: (team) => { } },
-    // Nuevos añadidos
     { type: 'item', text: "🗝️ {player} revisó el bolsillo de una estatua y halló una llave oculta.", action: (team) => { team.keys++; } },
     { type: 'item', text: "🧮 {player} descubrió un viejo ábaco. ¡Se sienten más inteligentes!", action: (team) => { team.items.push("Abaco"); } },
     { type: 'buff', text: "💡 {player} tuvo una epifanía matemática y guio al grupo.", action: (team) => { } },
@@ -129,13 +138,31 @@ const DOM = {
     priorityListDisplay: document.getElementById('priority-list-display'),
     endTitle: document.getElementById('end-title'),
     endStatsContent: document.getElementById('end-stats-content'),
-    dirButtons: document.querySelectorAll('.btn-dir')
+    dirButtons: document.querySelectorAll('.btn-dir'),
+    // Elementos del Modal de Muerte
+    deathModal: document.getElementById('death-modal'),
+    deathTeamName: document.getElementById('death-team-name'),
+    deathPlayerName: document.getElementById('death-player-name'),
+    deathCause: document.getElementById('death-cause'),
+    btnCloseDeathModal: document.getElementById('btn-close-death-modal')
 };
+
+// --- LISTENERS MODAL DE MUERTE ---
+DOM.btnCloseDeathModal.addEventListener('click', () => {
+    DOM.deathModal.classList.add('hidden');
+});
+
+function showDeathScreen(teamName, playerName) {
+    const randomCause = CAUSAS_MUERTE[Math.floor(Math.random() * CAUSAS_MUERTE.length)];
+    DOM.deathTeamName.innerText = `[${teamName}]`;
+    DOM.deathPlayerName.innerText = playerName;
+    DOM.deathCause.innerText = randomCause;
+    DOM.deathModal.classList.remove('hidden');
+}
 
 // --- LISTENERS CONFIGURACIÓN ---
 DOM.btnNextSetup.addEventListener('click', () => {
     const count = parseInt(DOM.teamsCountInput.value);
-    // 🚨 LIMITE ACTUALIZADO A 10 EQUIPOS
     if (count < 2 || count > 10) {
         alert("Soporta únicamente de 2 a 10 equipos simultáneos.");
         return;
@@ -185,7 +212,6 @@ function renderMembersInputs(teamIdx, size) {
 DOM.btnStartGame.addEventListener('click', () => {
     gameState.difficulty = DOM.difficultySelect.value;
     gameState.teams = [];
-    
     gameState.exitRoomKey = `${CONFIG.mapSize - 1},${CONFIG.mapSize - 1}`;
 
     for (let i = 1; i <= gameState.totalTeams; i++) {
@@ -527,11 +553,15 @@ function triggerRandomEvent(team) {
     const aliveMembers = team.members.filter(m => m.alive);
     if (aliveMembers.length === 0) return;
     const randomMember = aliveMembers[Math.floor(Math.random() * aliveMembers.length)];
+    
+    // SISTEMA DE MUERTE INTEGRADO
     if (Math.random() < CONFIG.probabilidadEliminacion) {
         randomMember.alive = false;
         logEvent(`💀 ¡Grave! ${randomMember.name} se desvaneció.`);
+        showDeathScreen(team.name, randomMember.name);
         return;
     }
+    
     const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)];
     template.action(team);
     logEvent(`✨ [Evento] ${template.text.replace("{player}", randomMember.name)} (${team.name})`);
@@ -562,8 +592,11 @@ function checkGhostCollisions() {
         if (isTeamAlive(team) && team.currentRoomKey === gameState.ghost.roomKey) {
             const alive = team.members.filter(m => m.alive);
             if (alive.length > 0) {
-                const victim = alive[Math.floor(Math.random() * alive.length)]; victim.alive = false;
+                const victim = alive[Math.floor(Math.random() * alive.length)]; 
+                victim.alive = false;
                 logEvent(`☠️ ¡EL GUARDIÁN ATACÓ! Eliminó a ${victim.name} en [${team.currentRoomKey}].`);
+                // SISTEMA DE MUERTE INTEGRADO
+                showDeathScreen(team.name, victim.name);
             }
         }
     });
@@ -589,4 +622,4 @@ function triggerEndGame(escaped, winningTeam) {
         DOM.endTitle.innerText = "💀 DERROTA TOTAL"; DOM.endTitle.style.color = "var(--danger)";
         DOM.endStatsContent.innerHTML = `<p>El Guardián ganó la partida en la ronda ${gameState.round}.</p>`;
     }
-}
+                }
