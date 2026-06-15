@@ -1,9 +1,8 @@
 /**
  * Mathyrinth: Escape del Guardián Desvanecido
- * Código del Núcleo del Sistema - Versión PC (Máx 10 Equipos + Sistema de Muertes)
+ * Código del Núcleo del Sistema - Versión PC (10x10, Spawn Central, IA Letal)
  */
 
-// Detector de errores general
 window.onerror = function(msg, url, linenumber) {
     alert('❌ ¡Error en el juego!\n\nDetalle: ' + msg + '\nLínea: ' + linenumber);
     return false;
@@ -50,15 +49,15 @@ const BANCO_ECUACIONES = {
     ]
 };
 
+// --- CONFIGURACIÓN ACTUALIZADA ---
 const CONFIG = {
-    mapSize: 6,               
-    maxRounds: 20,            
+    mapSize: 10,               // Mansión ampliada a 10x10
+    maxRounds: 30,             // Más rondas antes del modo letal
     probabilidadEvento: 0.65, 
     probabilidadPuertaBloq: 0.25, 
     probabilidadEliminacion: 0.05 
 };
 
-// Array de muertes aleatorias para el modal
 const CAUSAS_MUERTE = [
     "cayéndose por las escaleras",
     "devorado por las sombras",
@@ -84,13 +83,10 @@ let gameState = {
         status: "Inactivo"
     },
     logs: [],
-    startRoomKey: "0,0",
-    exitRoomKey: "5,5" 
+    startRoomKey: "4,4", // Spawn en el centro del mapa 10x10
+    exitRoomKey: "9,9"   // Salida en la esquina extrema
 };
 
-// ==========================================
-// BANCO DE EVENTOS AMPLIADO
-// ==========================================
 const EVENT_TEMPLATES = [
     { type: 'item', text: "🗝️ {player} encontró una llave tirada entre los escombros.", action: (team) => { team.keys++; } },
     { type: 'item', text: "🔦 {player} encontró una linterna funcional.", action: (team) => { team.items.push("Linterna"); } },
@@ -139,7 +135,6 @@ const DOM = {
     endTitle: document.getElementById('end-title'),
     endStatsContent: document.getElementById('end-stats-content'),
     dirButtons: document.querySelectorAll('.btn-dir'),
-    // Elementos del Modal de Muerte
     deathModal: document.getElementById('death-modal'),
     deathTeamName: document.getElementById('death-team-name'),
     deathPlayerName: document.getElementById('death-player-name'),
@@ -147,7 +142,6 @@ const DOM = {
     btnCloseDeathModal: document.getElementById('btn-close-death-modal')
 };
 
-// --- LISTENERS MODAL DE MUERTE ---
 DOM.btnCloseDeathModal.addEventListener('click', () => {
     DOM.deathModal.classList.add('hidden');
 });
@@ -160,7 +154,6 @@ function showDeathScreen(teamName, playerName) {
     DOM.deathModal.classList.remove('hidden');
 }
 
-// --- LISTENERS CONFIGURACIÓN ---
 DOM.btnNextSetup.addEventListener('click', () => {
     const count = parseInt(DOM.teamsCountInput.value);
     if (count < 2 || count > 10) {
@@ -208,11 +201,11 @@ function renderMembersInputs(teamIdx, size) {
     }
 }
 
-// --- BOTÓN TRIGGER JUEGO ---
 DOM.btnStartGame.addEventListener('click', () => {
     gameState.difficulty = DOM.difficultySelect.value;
     gameState.teams = [];
     gameState.exitRoomKey = `${CONFIG.mapSize - 1},${CONFIG.mapSize - 1}`;
+    gameState.startRoomKey = "4,4";
 
     for (let i = 1; i <= gameState.totalTeams; i++) {
         const teamName = document.getElementById(`setup-team-name-${i}`).value.trim() || `Equipo ${i}`;
@@ -237,7 +230,7 @@ DOM.btnStartGame.addEventListener('click', () => {
     gameState.map[gameState.startRoomKey].visited = true;
     DOM.setupScreen.classList.add('hidden');
     DOM.gameScreen.classList.remove('hidden');
-    logEvent("🏰 ¡Bienvenidos a Mathyrinth! Los equipos están atrapados en la entrada.");
+    logEvent("🏰 ¡Bienvenidos a Mathyrinth! Aparecieron en el centro de la mansión.");
     startMathPhase();
 });
 
@@ -257,6 +250,7 @@ function buildProceduralDungeon() {
     }
     gameState.map[gameState.startRoomKey].type = 'start';
     gameState.map[gameState.exitRoomKey].type = 'exit';
+    
     for (let x = 0; x < size; x++) {
         for (let y = 0; y < size; y++) {
             const currentKey = `${x},${y}`;
@@ -284,14 +278,6 @@ function buildProceduralDungeon() {
         gameState.map[`${size-1},${i+1}`].connections.N = `${size-1},${i}`;
     }
     
-    const secretKey = "1,2";
-    if (gameState.map[secretKey]) {
-        gameState.map[secretKey].type = 'secret';
-        const origin = "1,1";
-        gameState.map[origin].connections.S = secretKey;
-        gameState.map[secretKey].connections.N = origin;
-        gameState.map[origin].doorLocks.S = "mecanismo"; 
-    }
     for (let key in gameState.map) {
         let room = gameState.map[key];
         if (room.type === 'normal' && Math.random() < CONFIG.probabilidadPuertaBloq) {
@@ -307,8 +293,7 @@ function buildProceduralDungeon() {
 function fetchManualEquation(difficulty) {
     const pool = BANCO_ECUACIONES[difficulty] || BANCO_ECUACIONES['medium'];
     const randomIndex = Math.floor(Math.random() * pool.length);
-    const eq = pool[randomIndex];
-    return { expression: eq.expression, result: eq.result };
+    return { expression: pool[randomIndex].expression, result: pool[randomIndex].result };
 }
 
 function startMathPhase() {
@@ -392,10 +377,7 @@ function renderTeamsControlPanel() {
     });
 }
 
-function setTeamMathState(teamId, state) {
-    gameState.teams[teamId].mathState = state;
-    renderTeamsControlPanel();
-}
+function setTeamMathState(teamId, state) { gameState.teams[teamId].mathState = state; renderTeamsControlPanel(); }
 
 function submitTeamAnswer(teamId) {
     const team = gameState.teams[teamId];
@@ -403,37 +385,21 @@ function submitTeamAnswer(teamId) {
     if (inputVal === "") return;
     team.hasAnsweredThisRound = true;
     if (parseInt(inputVal) === team.currentEquation.result) {
-        team.answeredCorrectly = true;
-        team.mathSolvedCount++;
-        gameState.priorityQueue.push(teamId);
-        logEvent(`📝 ${team.name} resolvió correctamente.`);
-        triggerRandomEvent(team);
-    } else {
-        team.answeredCorrectly = false;
-        logEvent(`❌ ${team.name} falló la ecuación.`);
-    }
-    updatePriorityListDisplay();
-    renderTeamsControlPanel();
+        team.answeredCorrectly = true; team.mathSolvedCount++; gameState.priorityQueue.push(teamId);
+        logEvent(`📝 ${team.name} resolvió correctamente.`); triggerRandomEvent(team);
+    } else { team.answeredCorrectly = false; logEvent(`❌ ${team.name} falló la ecuación.`); }
+    updatePriorityListDisplay(); renderTeamsControlPanel();
 }
 
 function submitTeamFail(teamId) {
-    const team = gameState.teams[teamId];
-    team.hasAnsweredThisRound = true;
-    team.answeredCorrectly = false;
-    logEvent(`❌ Árbitro invalidó el turno de ${team.name}.`);
-    updatePriorityListDisplay();
-    renderTeamsControlPanel();
+    const team = gameState.teams[teamId]; team.hasAnsweredThisRound = true; team.answeredCorrectly = false;
+    logEvent(`❌ Árbitro invalidó el turno de ${team.name}.`); updatePriorityListDisplay(); renderTeamsControlPanel();
 }
 
 function updatePriorityListDisplay() {
     DOM.priorityListDisplay.innerHTML = "";
-    if (gameState.priorityQueue.length === 0) {
-        DOM.priorityListDisplay.innerHTML = "<li>Ninguno clasificado</li>";
-        return;
-    }
-    gameState.priorityQueue.forEach((teamId) => {
-        DOM.priorityListDisplay.innerHTML += `<li><strong>${gameState.teams[teamId].name}</strong></li>`;
-    });
+    if (gameState.priorityQueue.length === 0) { DOM.priorityListDisplay.innerHTML = "<li>Ninguno clasificado</li>"; return; }
+    gameState.priorityQueue.forEach((teamId) => { DOM.priorityListDisplay.innerHTML += `<li><strong>${gameState.teams[teamId].name}</strong></li>`; });
 }
 
 function renderDungeonMap() {
@@ -455,8 +421,7 @@ function renderDungeonMap() {
             let roomIcons = "";
             if (room.type === 'start') roomIcons += "🏁";
             if (room.type === 'exit') roomIcons += "🚪🔑";
-            if (room.type === 'secret') roomIcons += "❓";
-            cell.innerHTML = `<div class="room-id-lbl">${key} ${roomIcons}</div><div class="room-occupants">${occupants.join(', ')}</div>`;
+            cell.innerHTML = `<div class="room-id-lbl" style="font-size:0.6rem;">${key} ${roomIcons}</div><div class="room-occupants">${occupants.join(', ')}</div>`;
             DOM.dungeonMap.appendChild(cell);
         }
     }
@@ -483,31 +448,9 @@ DOM.dirButtons.forEach(btn => {
 window.addEventListener('keydown', (e) => {
     if (gameState.currentPhase !== 'movement') return;
     if (gameState.priorityQueue.length === 0 || gameState.currentMovementIndex >= gameState.priorityQueue.length) return;
-
     let direction = null;
-    switch (e.key.toLowerCase()) {
-        case 'arrowup':
-        case 'w':
-            direction = 'N';
-            break;
-        case 'arrowdown':
-        case 's':
-            direction = 'S';
-            break;
-        case 'arrowright':
-        case 'd':
-            direction = 'E';
-            break;
-        case 'arrowleft':
-        case 'a':
-            direction = 'O';
-            break;
-    }
-
-    if (direction) {
-        e.preventDefault(); 
-        executeMovement(direction);
-    }
+    switch (e.key.toLowerCase()) { case 'arrowup': case 'w': direction = 'N'; break; case 'arrowdown': case 's': direction = 'S'; break; case 'arrowright': case 'd': direction = 'E'; break; case 'arrowleft': case 'a': direction = 'O'; break; }
+    if (direction) { e.preventDefault(); executeMovement(direction); }
 });
 
 function executeMovement(dir) {
@@ -536,17 +479,12 @@ function executeMovement(dir) {
     gameState.currentMovementIndex++;
     if (gameState.currentMovementIndex < gameState.priorityQueue.length) { selectTeamForMovement(gameState.priorityQueue[gameState.currentMovementIndex]); } 
     else { DOM.currentMovingTeamTxt.innerText = "Todos se movieron. Finalice la ronda."; }
-    renderDungeonMap();
-    renderTeamsControlPanel();
+    renderDungeonMap(); renderTeamsControlPanel();
 }
 
-function getOppositeDirection(dir) {
-    if (dir === 'N') return 'S'; if (dir === 'S') return 'N'; if (dir === 'E') return 'O'; return 'E';
-}
+function getOppositeDirection(dir) { if (dir === 'N') return 'S'; if (dir === 'S') return 'N'; if (dir === 'E') return 'O'; return 'E'; }
 
-DOM.btnAdvancePhase.addEventListener('click', () => {
-    if (gameState.currentPhase === 'math') { startMovementPhase(); } else { endRound(); }
-});
+DOM.btnAdvancePhase.addEventListener('click', () => { if (gameState.currentPhase === 'math') { startMovementPhase(); } else { endRound(); } });
 
 function triggerRandomEvent(team) {
     if (Math.random() > CONFIG.probabilidadEvento) return;
@@ -554,36 +492,69 @@ function triggerRandomEvent(team) {
     if (aliveMembers.length === 0) return;
     const randomMember = aliveMembers[Math.floor(Math.random() * aliveMembers.length)];
     
-    // SISTEMA DE MUERTE INTEGRADO
     if (Math.random() < CONFIG.probabilidadEliminacion) {
-        randomMember.alive = false;
-        logEvent(`💀 ¡Grave! ${randomMember.name} se desvaneció.`);
-        showDeathScreen(team.name, randomMember.name);
-        return;
+        randomMember.alive = false; logEvent(`💀 ¡Grave! ${randomMember.name} se desvaneció.`);
+        showDeathScreen(team.name, randomMember.name); return;
     }
     
     const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)];
-    template.action(team);
-    logEvent(`✨ [Evento] ${template.text.replace("{player}", randomMember.name)} (${team.name})`);
+    template.action(team); logEvent(`✨ [Evento] ${template.text.replace("{player}", randomMember.name)} (${team.name})`);
 }
 
+// --- IA DEL GUARDIÁN MEJORADA ---
 function processGhostAI() {
     if (gameState.round <= 2) { gameState.ghost.active = false; DOM.ghostStatusBar.innerText = "El Guardián duerme..."; return; }
     if (gameState.round === 3) { gameState.ghost.active = false; gameState.ghost.roomKey = gameState.exitRoomKey; DOM.ghostStatusBar.innerText = "El ambiente se enfría..."; return; }
     if (gameState.round === 4 && !gameState.ghost.active) { gameState.ghost.active = true; DOM.ghostStatusBar.innerText = "👻 Guardián activo."; logEvent("👻 El Guardián ha despertado."); }
+    
     if (gameState.ghost.active) {
-        const currentRoom = gameState.map[gameState.ghost.roomKey];
-        let randomFactor = Math.random();
-        if (randomFactor < 0.15 && gameState.round <= 20) { logEvent("👻 El Guardián se desorientó."); return; }
-        if (randomFactor > 0.88) {
-            let coords = gameState.ghost.roomKey.split(',').map(Number);
-            let nextX = Math.min(Math.max(coords[0] + (Math.random() > 0.5 ? 1 : -1), 0), CONFIG.mapSize - 1);
-            let nextY = Math.min(Math.max(coords[1] + (Math.random() > 0.5 ? 1 : -1), 0), CONFIG.mapSize - 1);
-            gameState.ghost.roomKey = `${nextX},${nextY}`; logEvent("👻 El Guardián cruzó un muro."); checkGhostCollisions(); return;
+        const isLethalMode = gameState.round > CONFIG.maxRounds;
+        
+        if (!isLethalMode) {
+            // MODO NORMAL: Movimiento semi-aleatorio
+            const currentRoom = gameState.map[gameState.ghost.roomKey];
+            let randomFactor = Math.random();
+            if (randomFactor < 0.15) { logEvent("👻 El Guardián se desorientó."); return; }
+            if (randomFactor > 0.88) {
+                let coords = gameState.ghost.roomKey.split(',').map(Number);
+                let nextX = Math.min(Math.max(coords[0] + (Math.random() > 0.5 ? 1 : -1), 0), CONFIG.mapSize - 1);
+                let nextY = Math.min(Math.max(coords[1] + (Math.random() > 0.5 ? 1 : -1), 0), CONFIG.mapSize - 1);
+                gameState.ghost.roomKey = `${nextX},${nextY}`; logEvent("👻 El Guardián cruzó un muro."); checkGhostCollisions(); return;
+            }
+            let validDirections = [];
+            for (let d in currentRoom.connections) { if (currentRoom.connections[d]) validDirections.push(currentRoom.connections[d]); }
+            if (validDirections.length > 0) { gameState.ghost.roomKey = validDirections[Math.floor(Math.random() * validDirections.length)]; DOM.ghostStatusBar.innerText = "👻 El Guardián ronda..."; checkGhostCollisions(); }
+        } else {
+            // MODO LETAL: Rastrea al equipo más cercano de forma agresiva
+            logEvent("🩸 EL GUARDIÁN ESTÁ SEDIENTO (MODO LETAL)");
+            DOM.ghostStatusBar.innerText = "🩸 ¡El Guardián te persigue!";
+            let ghostCoords = gameState.ghost.roomKey.split(',').map(Number);
+            let targetTeam = null;
+            let minDistance = Infinity;
+
+            gameState.teams.forEach(t => {
+                if (isTeamAlive(t)) {
+                    let tCoords = t.currentRoomKey.split(',').map(Number);
+                    let dist = Math.abs(ghostCoords[0] - tCoords[0]) + Math.abs(ghostCoords[1] - tCoords[1]);
+                    if (dist < minDistance) { minDistance = dist; targetTeam = t; }
+                }
+            });
+
+            if (targetTeam) {
+                let tCoords = targetTeam.currentRoomKey.split(',').map(Number);
+                let nextX = ghostCoords[0]; let nextY = ghostCoords[1];
+                
+                // Mueve 1 paso hacia el objetivo ignorando colisiones
+                if (ghostCoords[0] < tCoords[0]) nextX++;
+                else if (ghostCoords[0] > tCoords[0]) nextX--;
+                else if (ghostCoords[1] < tCoords[1]) nextY++;
+                else if (ghostCoords[1] > tCoords[1]) nextY--;
+
+                gameState.ghost.roomKey = `${nextX},${nextY}`;
+                logEvent(`👻 El Guardián acecha directo hacia [${gameState.ghost.roomKey}].`);
+            }
+            checkGhostCollisions();
         }
-        let validDirections = [];
-        for (let d in currentRoom.connections) { if (currentRoom.connections[d] && (!currentRoom.doorLocks[d] || gameState.round > 20)) validDirections.push(currentRoom.connections[d]); }
-        if (validDirections.length > 0) { gameState.ghost.roomKey = validDirections[Math.floor(Math.random() * validDirections.length)]; DOM.ghostStatusBar.innerText = "👻 El Guardián se movió."; checkGhostCollisions(); }
     }
 }
 
@@ -595,7 +566,6 @@ function checkGhostCollisions() {
                 const victim = alive[Math.floor(Math.random() * alive.length)]; 
                 victim.alive = false;
                 logEvent(`☠️ ¡EL GUARDIÁN ATACÓ! Eliminó a ${victim.name} en [${team.currentRoomKey}].`);
-                // SISTEMA DE MUERTE INTEGRADO
                 showDeathScreen(team.name, victim.name);
             }
         }
@@ -622,4 +592,4 @@ function triggerEndGame(escaped, winningTeam) {
         DOM.endTitle.innerText = "💀 DERROTA TOTAL"; DOM.endTitle.style.color = "var(--danger)";
         DOM.endStatsContent.innerHTML = `<p>El Guardián ganó la partida en la ronda ${gameState.round}.</p>`;
     }
-                }
+}
