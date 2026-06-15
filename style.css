@@ -26,12 +26,12 @@
 body {
     background-color: var(--bg-dark);
     color: var(--text-main);
-    padding: 10px;
+    padding: 20px;
     min-height: 100vh;
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1400px; /* Ancho optimizado para PC */
     margin: 0 auto;
     width: 100%;
 }
@@ -61,6 +61,20 @@ h2 {
     color: var(--text-muted);
     font-size: 0.9rem;
     margin-bottom: 20px;
+}
+
+/* --- DISTRIBUCIÓN DE ESCRITORIO (PC) --- */
+#game-screen {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    #game-screen {
+        grid-template-columns: 1fr;
+    }
 }
 
 .setup-card {
@@ -118,8 +132,10 @@ button {
 .btn-success { background: var(--success); color: white; }
 .btn-success:hover { background: #15803d; }
 .btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #b91c1c; }
 .btn-warning { background: var(--warning); color: black; }
 .full-width { width: 100%; }
+
 .game-header {
     background: var(--panel-bg);
     padding: 10px 20px;
@@ -131,19 +147,6 @@ button {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-}
-
-.game-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr 1fr;
-    gap: 10px;
-    align-items: start;
-}
-
-@media (max-width: 1024px) {
-    .game-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 .panel-section {
@@ -165,12 +168,21 @@ button {
     font-size: 0.9rem;
 }
 
+/* --- TARJETAS DE EQUIPO (GRILLA PARA 10 EQUIPOS) --- */
+#teams-game-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    max-height: 500px; /* Genera scroll si hay muchos */
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
 .team-game-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 12px;
-    margin-bottom: 12px;
 }
 
 .team-game-card.priority-active {
@@ -251,33 +263,35 @@ button {
     background: #09090d;
     border: 2px solid #2e2e3f;
     border-radius: 6px;
-    padding: 10px;
-    overflow-x: auto;
+    padding: 15px;
     display: flex;
     justify-content: center;
     margin-bottom: 15px;
 }
 
+/* --- MAPA ADAPTADO PARA PC --- */
 #dungeon-map {
     display: grid;
     gap: 8px;
     position: relative;
+    aspect-ratio: 1 / 1;
+    max-width: 650px;
+    width: 100%;
 }
 
 .map-room {
-    width: 65px;
-    height: 65px;
     background: var(--room-hidden);
     border: 1px solid #27272a;
     border-radius: 4px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 3px;
-    font-size: 0.7rem;
+    padding: 5px;
+    font-size: 0.8rem;
     color: transparent;
     position: relative;
     transition: all 0.3s;
+    min-height: 60px;
 }
 
 .map-room.visible {
@@ -305,19 +319,14 @@ button {
     font-weight: bold;
 }
 
-.room-icons {
-    font-size: 0.75rem;
-    text-align: right;
-}
-
 .room-occupants {
     background: rgba(0,0,0,0.6);
     color: #fff;
     font-weight: bold;
     text-align: center;
     border-radius: 2px;
-    padding: 1px 0;
-    font-size: 0.65rem;
+    padding: 2px 0;
+    font-size: 0.75rem;
     white-space: nowrap;
     overflow: hidden;
 }
@@ -435,4 +444,74 @@ button {
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 5px;
-                              }
+}
+
+/* =========================================
+   NUEVO: MODAL DE NOTIFICACIÓN DE MUERTE 
+   ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(3px);
+}
+
+.death-modal-content {
+    background: #111115;
+    border: 2px solid var(--danger);
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 450px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(220, 38, 38, 0.4);
+    animation: popIn 0.3s ease-out forwards;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.death-modal-content h3 {
+    color: var(--danger);
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.death-modal-content p {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    margin-bottom: 25px;
+    color: #e2e8f0;
+}
+
+.death-modal-content .player-name-highlight {
+    color: #fbbf24;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.btn-close-modal {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 10px 25px;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-close-modal:hover {
+    background: var(--danger);
+    color: white;
+}
