@@ -9,9 +9,9 @@
 <body>
 
     <div id="setup-screen" class="container">
-        <h1>📐 Mathyrinth</h1>
-        <h2>Escape del Guardián Desvanecido</h2>
-        <p class="subtitle">Juego de mesa matemático para mazmorras analógicas</p>
+        <h1>Mathyrinth</h1>
+        <h2>Altamirano Lautaro, Victoria Medina, Valentina Coronel, Paolo Farias, Roma Semeria y Fariña Santiago.</h2>
+        <p class="subtitle">Sii matemáticas, no le digan a lauty que puse esto</p>
         
         <div class="setup-card">
             <h3>Configuración de Partida</h3>
@@ -107,7 +107,15 @@
             <button onclick="window.location.reload();" class="btn-primary">Jugar de Nuevo</button>
         </div>
     </div>
-
+<div id="death-modal" class="modal-overlay hidden">
+    <div class="death-modal-content">
+        <h3>¡Catástrofe!</h3>
+        <p>El grupo <strong id="death-team-name"></strong> ha sufrido una pérdida.</p>
+        <p><span id="death-player-name" class="player-name-highlight"></span> murió <span id="death-cause"></span>. Ya no podrá ayudar a su equipo a escapar.</p>
+        <button id="btn-close-death-modal" class="btn-close-modal">Aceptar destino</button>
+    </div>
+</div>
+    
     <script src="script.js"></script>
 </body>
 </html>
